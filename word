@@ -1,1 +1,1 @@
-DateTimeParse([YourDateColumn], "%Y-%m-%d")
+DateTimeParse([YourDateColumn], "%d-%b-%Y %H:%M:%S")

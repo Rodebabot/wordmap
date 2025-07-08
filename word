@@ -1,1 +1,32 @@
-DateTimeParse([YourDateColumn], "%d-%b-%Y %H:%M:%S")
+import os
+import pandas as pd
+from datetime import datetime
+
+# Step 1: Define the base location
+base_path = r'YOUR\BASE\DIRECTORY\PATH'  # replace with actual path
+
+# Step 2: Get the folder with the latest month (by name)
+months = {month: i for i, month in enumerate(['January', 'February', 'March', 'April', 'May', 'June',
+                                              'July', 'August', 'September', 'October', 'November', 'December'], start=1)}
+
+# Filter directories that match valid month names
+month_folders = [f for f in os.listdir(base_path) if f in months and os.path.isdir(os.path.join(base_path, f))]
+latest_month = max(month_folders, key=lambda x: months[x])
+month_path = os.path.join(base_path, latest_month)
+
+# Step 3: Get the latest date folder inside the month folder
+date_folders = [f for f in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, f))]
+# Assuming folder names are like "01", "15", "30"
+latest_date = max(date_folders, key=lambda x: int(x))
+final_path = os.path.join(month_path, latest_date)
+
+# Step 4: Read all 3 CSV files from the final path
+csv_files = sorted([f for f in os.listdir(final_path) if f.lower().endswith('.csv')])[:3]
+df1 = pd.read_csv(os.path.join(final_path, csv_files[0]))
+df2 = pd.read_csv(os.path.join(final_path, csv_files[1]))
+df3 = pd.read_csv(os.path.join(final_path, csv_files[2]))
+
+# Optional: print info
+print("Latest Month Folder:", latest_month)
+print("Latest Date Folder:", latest_date)
+print("CSV Files Read:", csv_files)

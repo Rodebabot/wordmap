@@ -1,5 +1,13 @@
-# Get latest by numeric prefix
-latest_month = max(month_folders, key=lambda x: int(x[:2]))
-month_path = os.path.join(base_path, latest_month)
-month_name = latest_month.split(' ', 1)[-1]  # Extract 'July' from '07 July'
-print("✅ Latest Month Folder:", latest_month)
+# Step 3: Get folders like "1 July", "2 July", ... and extract numeric prefix
+date_folders = [
+    f for f in os.listdir(month_path)
+    if os.path.isdir(os.path.join(month_path, f)) and f.endswith(month_name) and f.split(' ')[0].isdigit()
+]
+
+if not date_folders:
+    raise Exception(f"No valid date folders like '1 {month_name}', '2 {month_name}' found in {month_path}")
+
+# Find latest by numeric prefix
+latest_date_folder = max(date_folders, key=lambda x: int(x.split(' ')[0]))
+final_path = os.path.join(month_path, latest_date_folder)
+print("✅ Latest Date Folder:", latest_date_folder)

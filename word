@@ -42,3 +42,55 @@ df2 = pd.read_csv(os.path.join(final_path, csv_files[1]))
 df3 = pd.read_csv(os.path.join(final_path, csv_files[2]))
 
 print("✅ Loaded CSVs:", csv_files[:3])
+
+
+
+import os
+import pandas as pd
+
+# Step 1: Define the base path
+base_path = r'YOUR\BASE\DIRECTORY\PATH'  # Replace this with your actual path
+
+# Step 2: Get latest month folder like "01 Jan", "02 Feb", ...
+month_folders = [f for f in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, f)) and f[:2].isdigit()]
+if not month_folders:
+    raise Exception(f"No valid month folders found in {base_path}")
+
+# Get latest by numeric prefix
+latest_month = max(month_folders, key=lambda x: int(x[:2]))
+month_path = os.path.join(base_path, latest_month)
+print("✅ Latest Month Folder:", latest_month)
+
+# ✅ Step 3: Now inside latest_month, pick folder with highest leading number
+subfolders = [f for f in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, f))]
+numeric_subfolders = []
+
+for folder in subfolders:
+    parts = folder.split()
+    if parts and parts[0].isdigit():
+        numeric_subfolders.append((int(parts[0]), folder))
+
+if not numeric_subfolders:
+    raise Exception(f"No valid subfolders with numeric prefixes found in {month_path}")
+
+# Get folder with max number
+_, latest_date_folder = max(numeric_subfolders, key=lambda x: x[0])
+latest_date_path = os.path.join(month_path, latest_date_folder)
+print("✅ Latest Date Folder:", latest_date_folder)
+
+# ✅ Step 4: Go into 'KFC' subfolder
+kfc_path = os.path.join(latest_date_path, 'KFC')
+if not os.path.isdir(kfc_path):
+    raise Exception(f"'KFC' folder not found in {latest_date_path}")
+
+# Step 5: Read top 3 CSV files from KFC
+csv_files = sorted([f for f in os.listdir(kfc_path) if f.lower().endswith('.csv')])
+
+if len(csv_files) < 3:
+    raise Exception(f"Less than 3 CSV files found in {kfc_path}. Found: {len(csv_files)}")
+
+df1 = pd.read_csv(os.path.join(kfc_path, csv_files[0]))
+df2 = pd.read_csv(os.path.join(kfc_path, csv_files[1]))
+df3 = pd.read_csv(os.path.join(kfc_path, csv_files[2]))
+
+print("✅ Loaded CSVs from KFC:", csv_files[:3])

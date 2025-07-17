@@ -1,15 +1,1 @@
-
-# Step 1: Calculate medians
-avg_median = summary['Average'].median()
-cv_median = summary['CV (%)'].median()
-
-# Step 2: Create new columns with tags
-summary['Average_Tag'] = summary['Average'].apply(lambda x: 'High' if x > avg_median else 'Low')
-summary['CV_Tag'] = summary['CV (%)'].apply(lambda x: 'High' if x > cv_median else 'Low')
-
-# Optional: sort by tags or values
-summary = summary.sort_values(by=['Average_Tag', 'CV_Tag'], ascending=False)
-
-# Step 3: View or export
-print(summary[['Exceptions', 'System', 'Average', 'Average_Tag', 'CV (%)', 'CV_Tag']])
-# summary.to_excel("Tagged_Exception_System_Stats.xlsx", index=False)
+frff

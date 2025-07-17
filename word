@@ -1,29 +1,32 @@
 import pandas as pd
 
-# Step 1: Load your Excel or CSV file
-# Example: df_raw = pd.read_excel("your_file.xlsx", skiprows=2) # adjust skiprows based on your format
+# Step 1: Read the data (replace this with your actual file)
+# df_raw = pd.read_excel("your_file.xlsx")
 
-# Step 2: Manually define the column structure
-# Example: Suppose your columns are:
-# ['Error', 'Ignore', '2023-01_System1', '2023-01_System2', '2023-01_System3', '2023-01_Total',
-#                     '2023-02_System1', '2023-02_System2', '2023-02_System3', '2023-02_Total']
+# Step 2: Drop unnecessary columns
+# Let's assume column 1 is Error, column 2 is Something (drop), rest are repeating System1, System2, System3, Total
+# Example columns: ['Error', 'Something', 'System1', 'System2', 'System3', 'Total', 'System1', 'System2', 'System3', 'Total', ...]
 
-# Drop unwanted columns (like 'Ignore', 'Total')
-columns_to_drop = [col for col in df_raw.columns if 'Total' in col or 'Ignore' in col]
-df = df_raw.drop(columns=columns_to_drop)
+# Drop every 6th column (Totals): starts from 5th index
+cols_to_drop = [i for i in range(len(df_raw.columns)) if i % 5 == 0 and i > 1]
+df_cleaned = df_raw.drop(df_raw.columns[cols_to_drop + [1]], axis=1)  # Also drop 'Something' at index 1
 
-# Step 3: Melt the dataframe (convert wide to long)
-df_melted = df.melt(id_vars='Error', var_name='Date_System', value_name='Value')
+# Step 3: Reshape the data
+# Resulting columns should now repeat: System1, System2, System3 for each date
+system_cols = ['System1', 'System2', 'System3'] * (len(df_cleaned.columns) // 3)
 
-# Step 4: Split Date and System
-df_melted[['Date', 'System']] = df_melted['Date_System'].str.split('_', expand=True)
+# Rename all system columns
+df_cleaned.columns = ['Error'] + system_cols
 
-# Step 5: Group by Error and System to compute Average and CV
-agg_df = df_melted.groupby(['Error', 'System'])['Value'].agg(['mean', 'std']).reset_index()
-agg_df['CV (%)'] = (agg_df['std'] / agg_df['mean']) * 100
+# Step 4: Melt the dataframe to long format
+df_long = df_cleaned.melt(id_vars='Error', var_name='System', value_name='Value')
 
-# Step 6: Final output
-agg_df = agg_df[['Error', 'System', 'mean', 'CV (%)']]
-agg_df.rename(columns={'mean': 'Average'}, inplace=True)
+# Step 5: Group and calculate average and coefficient of variation
+summary = df_long.groupby(['Error', 'System'])['Value'].agg(['mean', 'std']).reset_index()
+summary['CV (%)'] = (summary['std'] / summary['mean']) * 100
 
-print(agg_df)
+# Rename column for clarity
+summary.rename(columns={'mean': 'Average'}, inplace=True)
+
+# Step 6: Show result
+print(summary)

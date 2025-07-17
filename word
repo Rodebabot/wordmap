@@ -1,25 +1,26 @@
 import pandas as pd
 
 # Step 1: Load the file
-# df_raw = pd.read_excel("your_file.xlsx")
+df = pd.read_excel("your_file_path.xlsx", skiprows=1)
 
-# Step 2: Drop every 4th column starting from index 4 (Total columns)
-cols_to_drop = [i for i in range(len(df_raw.columns)) if (i - 1) % 4 == 3]  # Exclude 'Error' column at index 0
-df_cleaned = df_raw.drop(df_raw.columns[cols_to_drop], axis=1)
+# Step 2: Drop all Total columns (they contain 'Total' in their name)
+df = df.drop(columns=[col for col in df.columns if 'Total' in str(col)])
 
-# Step 3: Build column names (Error + repeated System1/2/3)
-num_system_cols = df_cleaned.shape[1] - 1  # Exclude 'Error'
-repeats = num_system_cols // 3
-system_cols = (['System1', 'System2', 'System3'] * repeats)[:num_system_cols]
-df_cleaned.columns = ['Error'] + system_cols
+# Step 3: Melt the dataframe to long format
+df_long = df.melt(id_vars='Exceptions', var_name='SystemRaw', value_name='Value')
 
-# Step 4: Reshape the data to long format
-df_long = df_cleaned.melt(id_vars='Error', var_name='System', value_name='Value')
+# Step 4: Normalize system names (remove .1, .2, etc.)
+df_long['System'] = df_long['SystemRaw'].str.extract(r'(^[^\.\d]+)')  # Extract "Athena", "GPS", "PTP"
 
-# Step 5: Group and calculate mean & Coefficient of Variation
-summary = df_long.groupby(['Error', 'System'])['Value'].agg(['mean', 'std']).reset_index()
+# Step 5: Group and aggregate
+summary = df_long.groupby(['Exceptions', 'System'])['Value'].agg(['mean', 'std']).reset_index()
 summary['CV (%)'] = (summary['std'] / summary['mean']) * 100
 summary.rename(columns={'mean': 'Average'}, inplace=True)
 
-# Step 6: Final output
+# Optional: round for readability
+summary['Average'] = summary['Average'].round(2)
+summary['CV (%)'] = summary['CV (%)'].round(2)
+
+# Step 6: Display or save
 print(summary)
+# summary.to_excel("Exception_System_Stats.xlsx", index=False)

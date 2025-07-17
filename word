@@ -1,32 +1,25 @@
 import pandas as pd
 
-# Step 1: Read the data (replace this with your actual file)
+# Step 1: Load the file
 # df_raw = pd.read_excel("your_file.xlsx")
 
-# Step 2: Drop unnecessary columns
-# Let's assume column 1 is Error, column 2 is Something (drop), rest are repeating System1, System2, System3, Total
-# Example columns: ['Error', 'Something', 'System1', 'System2', 'System3', 'Total', 'System1', 'System2', 'System3', 'Total', ...]
+# Step 2: Drop every 4th column starting from index 4 (Total columns)
+cols_to_drop = [i for i in range(len(df_raw.columns)) if (i - 1) % 4 == 3]  # Exclude 'Error' column at index 0
+df_cleaned = df_raw.drop(df_raw.columns[cols_to_drop], axis=1)
 
-# Drop every 6th column (Totals): starts from 5th index
-cols_to_drop = [i for i in range(len(df_raw.columns)) if i % 5 == 0 and i > 1]
-df_cleaned = df_raw.drop(df_raw.columns[cols_to_drop + [1]], axis=1)  # Also drop 'Something' at index 1
-
-# Step 3: Reshape the data
-# Resulting columns should now repeat: System1, System2, System3 for each date
-system_cols = ['System1', 'System2', 'System3'] * (len(df_cleaned.columns) // 3)
-
-# Rename all system columns
+# Step 3: Build column names (Error + repeated System1/2/3)
+num_system_cols = df_cleaned.shape[1] - 1  # Exclude 'Error'
+repeats = num_system_cols // 3
+system_cols = (['System1', 'System2', 'System3'] * repeats)[:num_system_cols]
 df_cleaned.columns = ['Error'] + system_cols
 
-# Step 4: Melt the dataframe to long format
+# Step 4: Reshape the data to long format
 df_long = df_cleaned.melt(id_vars='Error', var_name='System', value_name='Value')
 
-# Step 5: Group and calculate average and coefficient of variation
+# Step 5: Group and calculate mean & Coefficient of Variation
 summary = df_long.groupby(['Error', 'System'])['Value'].agg(['mean', 'std']).reset_index()
 summary['CV (%)'] = (summary['std'] / summary['mean']) * 100
-
-# Rename column for clarity
 summary.rename(columns={'mean': 'Average'}, inplace=True)
 
-# Step 6: Show result
+# Step 6: Final output
 print(summary)

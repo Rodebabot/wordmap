@@ -1,1 +1,61 @@
-ggh
+import pandas as pd
+import dash
+from dash import dcc, html, Input, Output
+import dash_bootstrap_components as dbc
+
+# Load Excel
+df = pd.read_excel('data.xlsx')
+
+# Convert all to string for safety
+df = df.astype(str)
+
+# Initialize app with Bootstrap for good design
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LUX])
+app.title = "Exc Scorecard"
+
+app.layout = dbc.Container([
+    html.H2("🔍 Exc Scorecard", className='text-center my-4'),
+
+    dcc.Input(
+        id='search-input',
+        type='text',
+        placeholder='Type a sentence to search...',
+        debounce=True,
+        style={'width': '100%', 'padding': '10px', 'fontSize': '18px'}
+    ),
+
+    html.Div(id='result-container', className='mt-4')
+])
+
+@app.callback(
+    Output('result-container', 'children'),
+    Input('search-input', 'value')
+)
+def update_output(value):
+    if not value:
+        return html.Div("Please enter a sentence to search.", style={'fontSize': '18px', 'color': '#888'})
+    
+    # Filter by partial match
+    filtered = df[df['exc'].str.contains(value, case=False, na=False)]
+
+    if filtered.empty:
+        return html.Div("No matching entries found.", style={'fontSize': '18px', 'color': '#c00'})
+
+    # Generate cards
+    cards = []
+    for _, row in filtered.iterrows():
+        card = dbc.Card([
+            dbc.CardHeader(row['exc'], style={'fontWeight': 'bold', 'fontSize': '18px'}),
+            dbc.CardBody([
+                html.P(f"Status: {row['status']}", className='card-text'),
+                html.P(f"Number: {row['number']}", className='card-text'),
+                html.P(f"R d: {row['R d']}", className='card-text'),
+            ])
+        ], className='mb-3 shadow-sm')
+        cards.append(card)
+
+    return cards
+
+if __name__ == '__main__':
+    app.run_server(debug=True, port=8050)
+

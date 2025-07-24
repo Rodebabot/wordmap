@@ -1,3 +1,9 @@
 DateTimeFirstOfMonth(DateTimeAdd(DateTimeTrim([ParsedcDate], "month"), -1, "months"))
 DateTimeAdd([ParsedCDate], -2, "days")
+[EROP Date] >= [StartPrevMonth] AND [EROP Date] <= [EndCutoffDate]
+IF [EROP Date] >= [StartPrevMonth] AND [EROP Date] <= [EndCutoffDate] THEN
+    "Murdered"
+ELSE
+    [Exception Message]
+ENDIF
 

@@ -1,1 +1,5 @@
-ggg
+DateTimeParse(
+  DateTimeFormat(DateTimeAdd([ParsedCOBDate], -1, "months"), "%Y-%m-01"),
+  "%Y-%m-%d"
+)
+

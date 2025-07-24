@@ -1,1 +1,3 @@
-tt
+DateTimeFirstOfMonth(DateTimeAdd(DateTimeTrim([ParsedcDate], "month"), -1, "months"))
+DateTimeAdd([ParsedCDate], -2, "days")
+

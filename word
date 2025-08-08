@@ -1,1 +1,55 @@
-yy
+
+import win32com.client
+import pandas as pd
+from datetime import datetime
+from textblob import TextBlob
+
+# --- USER INPUTS ---
+subfolder_name = "Subfolder Name Here"  # e.g., "Inbox/Subfolder"
+start_date = datetime(2024, 8, 1)
+end_date = datetime(2024, 8, 8)
+
+# --- Connect to Outlook ---
+outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+
+# --- Access mailbox and folder ---
+# Assuming the default account and inbox
+inbox = outlook.GetDefaultFolder(6)  # 6 = inbox
+folders = subfolder_name.split('/')
+target_folder = inbox
+for f in folders:
+    target_folder = target_folder.Folders(f)
+
+# --- Process emails ---
+mails = target_folder.Items
+mails.Sort("[ReceivedTime]", True)
+
+data = []
+
+for mail in mails:
+    try:
+        received = mail.ReceivedTime
+        if not (start_date <= received <= end_date):
+            continue
+        
+        subject = mail.Subject
+        sender = mail.SenderName
+        body = mail.Body
+        sentiment = TextBlob(body).sentiment.polarity
+
+        data.append({
+            "Sender": sender,
+            "Received Time": received.strftime("%Y-%m-%d %H:%M:%S"),
+            "Subject": subject,
+            "Sentiment Score": sentiment,
+            "Sentiment": "Positive" if sentiment > 0 else "Negative" if sentiment < 0 else "Neutral",
+            "Preview": body[:100]  # First 100 characters
+        })
+    except Exception as e:
+        print("Error reading email:", e)
+
+# --- Export to Excel ---
+df = pd.DataFrame(data)
+output_filename = f"Email_Report_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+df.to_excel(output_filename, index=False)
+print(f"✅ Report saved to {output_filename}")

@@ -52,3 +52,25 @@ df = pd.DataFrame(data)
 output_file = f"Outlook_Emails_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
 df.to_excel(output_file, index=False)
 print(f"✅ Done! Saved to {output_file}")
+
+
+
+import win32com.client
+
+# Connect to Outlook
+outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+
+# Get default inbox
+inbox = outlook.GetDefaultFolder(6)  # 6 = Inbox
+account_name = inbox.Parent.Name
+
+print(f"\n📬 Connected to mailbox: {account_name}")
+print("📁 Subfolders under Inbox:\n")
+
+# Recursive function to print subfolders
+def print_folders(folder, indent=0):
+    print("  " * indent + "- " + folder.Name)
+    for subfolder in folder.Folders:
+        print_folders(subfolder, indent + 1)
+
+print_folders(inbox)

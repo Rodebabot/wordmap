@@ -3,74 +3,72 @@ import pandas as pd
 from datetime import datetime
 from textblob import TextBlob
 
-# === USER SETTINGS ===
+# === USER INPUT ===
 start_date = datetime(2024, 8, 1)
 end_date = datetime(2024, 8, 8)
 
 # === Connect to Outlook ===
 outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
 inbox = outlook.GetDefaultFolder(6)  # 6 = Inbox
+account_name = inbox.Parent.Name
+print(f"📬 Connected to mailbox: {account_name}")
 
-# === Function to recursively read mails from folder and subfolders ===
-def read_mails(folder):
-    mails = folder.Items
-    mails.Sort("[ReceivedTime]", True)
-    collected = []
-    
-    for mail in mails:
+# === Function to read emails from a folder and its subfolders ===
+def read_emails(folder):
+    emails = []
+    items = folder.Items
+    items.Sort("[ReceivedTime]", True)
+
+    for item in items:
         try:
-            received = mail.ReceivedTime
-            if start_date <= received <= end_date:
-                sender = mail.SenderName
-                subject = mail.Subject
-                body = mail.Body
-                sentiment_score = TextBlob(body).sentiment.polarity
-                sentiment = "Positive" if sentiment_score > 0 else "Negative" if sentiment_score < 0 else "Neutral"
-                
-                collected.append({
-                    "Sender": sender,
-                    "Received Time": received.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Subject": subject,
-                    "Sentiment": sentiment,
-                    "Preview": body[:100]
-                })
-        except:
+            if item.Class != 43:  # MailItem
+                continue
+
+            received_time = item.ReceivedTime
+            if not (start_date <= received_time <= end_date):
+                continue
+
+            sender = item.SenderName
+            to = item.To
+            cc = item.CC
+            subject = item.Subject or ""
+            body = item.Body or ""
+            preview = body[:100].replace("\n", " ").replace("\r", " ")
+
+            sentiment_score = TextBlob(body).sentiment.polarity
+            sentiment = "Positive" if sentiment_score > 0 else "Negative" if sentiment_score < 0 else "Neutral"
+
+            emails.append({
+                "Folder": folder.Name,
+                "Sender": sender,
+                "To": to,
+                "CC": cc,
+                "Received Time": received_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "Subject": subject,
+                "Sentiment": sentiment,
+                "Sentiment Score": round(sentiment_score, 3),
+                "Preview": preview
+            })
+
+        except Exception as e:
+            print(f"⚠️ Skipped an email due to error: {e}")
             continue
 
     # Recurse into subfolders
     for subfolder in folder.Folders:
-        collected += read_mails(subfolder)
-    
-    return collected
+        emails += read_emails(subfolder)
 
-# === Read all mails ===
+    return emails
+
+# === Read emails ===
 print("🔍 Reading emails...")
-data = read_mails(inbox)
+emails_data = read_emails(inbox)
 
-# === Save to Excel ===
-df = pd.DataFrame(data)
-output_file = f"Outlook_Emails_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
-df.to_excel(output_file, index=False)
-print(f"✅ Done! Saved to {output_file}")
-
-
-
-import win32com.client
-
-# Connect to Outlook
-outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-
-# Get default inbox
-inbox = outlook.GetDefaultFolder(6)  # 6 = Inbox
-account_name = inbox.Parent.Name
-
-print(f"\n📬 Connected to mailbox: {account_name}")
-print("📁 Subfolders under Inbox:\n")
-
-# Recursive function to print subfolders
-def print_folders(folder, indent=0):
-    print("  " * indent + "- " + folder.Name)
-    for subfolder in folder.Folders:
-        print_folders(subfolder, indent + 1)
-
-print_folders(inbox)
+# === Export to Excel ===
+if not emails_data:
+    print("❌ No emails found in the given date range.")
+else:
+    df = pd.DataFrame(emails_data)
+    output_file = f"Outlook_Emails_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+    df.to_excel(output_file, index=False)
+    print(f"✅ {len(df)} emails saved to '{output_file}'")

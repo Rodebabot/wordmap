@@ -24,7 +24,9 @@ def read_emails(folder):
             if item.Class != 43:  # MailItem
                 continue
 
-            received_time = item.ReceivedTime
+            # Remove timezone info for safe comparison
+            received_time = item.ReceivedTime.replace(tzinfo=None)
+
             if not (start_date <= received_time <= end_date):
                 continue
 
@@ -60,7 +62,7 @@ def read_emails(folder):
 
     return emails
 
-# === Read emails ===
+# === Run ===
 print("🔍 Reading emails...")
 emails_data = read_emails(inbox)
 

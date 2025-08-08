@@ -1,55 +1,54 @@
-
 import win32com.client
 import pandas as pd
 from datetime import datetime
 from textblob import TextBlob
 
-# --- USER INPUTS ---
-subfolder_name = "Subfolder Name Here"  # e.g., "Inbox/Subfolder"
+# === USER SETTINGS ===
 start_date = datetime(2024, 8, 1)
 end_date = datetime(2024, 8, 8)
 
-# --- Connect to Outlook ---
+# === Connect to Outlook ===
 outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+inbox = outlook.GetDefaultFolder(6)  # 6 = Inbox
 
-# --- Access mailbox and folder ---
-# Assuming the default account and inbox
-inbox = outlook.GetDefaultFolder(6)  # 6 = inbox
-folders = subfolder_name.split('/')
-target_folder = inbox
-for f in folders:
-    target_folder = target_folder.Folders(f)
-
-# --- Process emails ---
-mails = target_folder.Items
-mails.Sort("[ReceivedTime]", True)
-
-data = []
-
-for mail in mails:
-    try:
-        received = mail.ReceivedTime
-        if not (start_date <= received <= end_date):
+# === Function to recursively read mails from folder and subfolders ===
+def read_mails(folder):
+    mails = folder.Items
+    mails.Sort("[ReceivedTime]", True)
+    collected = []
+    
+    for mail in mails:
+        try:
+            received = mail.ReceivedTime
+            if start_date <= received <= end_date:
+                sender = mail.SenderName
+                subject = mail.Subject
+                body = mail.Body
+                sentiment_score = TextBlob(body).sentiment.polarity
+                sentiment = "Positive" if sentiment_score > 0 else "Negative" if sentiment_score < 0 else "Neutral"
+                
+                collected.append({
+                    "Sender": sender,
+                    "Received Time": received.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Subject": subject,
+                    "Sentiment": sentiment,
+                    "Preview": body[:100]
+                })
+        except:
             continue
-        
-        subject = mail.Subject
-        sender = mail.SenderName
-        body = mail.Body
-        sentiment = TextBlob(body).sentiment.polarity
 
-        data.append({
-            "Sender": sender,
-            "Received Time": received.strftime("%Y-%m-%d %H:%M:%S"),
-            "Subject": subject,
-            "Sentiment Score": sentiment,
-            "Sentiment": "Positive" if sentiment > 0 else "Negative" if sentiment < 0 else "Neutral",
-            "Preview": body[:100]  # First 100 characters
-        })
-    except Exception as e:
-        print("Error reading email:", e)
+    # Recurse into subfolders
+    for subfolder in folder.Folders:
+        collected += read_mails(subfolder)
+    
+    return collected
 
-# --- Export to Excel ---
+# === Read all mails ===
+print("🔍 Reading emails...")
+data = read_mails(inbox)
+
+# === Save to Excel ===
 df = pd.DataFrame(data)
-output_filename = f"Email_Report_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
-df.to_excel(output_filename, index=False)
-print(f"✅ Report saved to {output_filename}")
+output_file = f"Outlook_Emails_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+df.to_excel(output_file, index=False)
+print(f"✅ Done! Saved to {output_file}")

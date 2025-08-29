@@ -1,1 +1,4 @@
+IF ISNULL([C]) THEN [Tr_Date] 
+ELSE [Tr_Date]
+ENDIF
 

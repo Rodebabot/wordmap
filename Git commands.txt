@@ -1,0 +1,13 @@
+| What I want to do           | Command                   |
+| --------------------------- | ------------------------- |
+| Check repository status     | `git status`              |
+| See all commits             | `git log --oneline`       |
+| See detailed commit history | `git log`                 |
+| See latest commit details   | `git show HEAD`           |
+| See files tracked by Git    | `git ls-files`            |
+| Add all changed files       | `git add .`               |
+| Add one file only           | `git add some.ipynb`      |
+| Create a commit             | `git commit -m "message"` |
+| Upload commits to GitHub    | `git push`                |
+| Download latest from GitHub | `git pull`                |
+| Check connected GitHub repo | `git remote -v`           |
